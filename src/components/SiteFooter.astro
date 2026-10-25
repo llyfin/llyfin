@@ -1,0 +1,16 @@
+---
+import { ArrowUpRight } from "lucide-react"
+import { site } from "@/site"
+---
+
+<footer class="mt-24 border-t py-8 text-sm text-muted-foreground">
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <p>© {new Date().getFullYear()} {site.name}</p>
+    <div class="flex flex-wrap gap-x-4 gap-y-2">
+      <a class="hover:text-foreground" href="/rss.xml">RSS</a>
+      <a class="inline-flex items-center gap-1 hover:text-foreground" href={site.repo} target="_blank" rel="noreferrer">
+        GitHub <ArrowUpRight className="size-3.5" />
+      </a>
+    </div>
+  </div>
+</footer>

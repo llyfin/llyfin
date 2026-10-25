@@ -1,0 +1,23 @@
+---
+import { Rss } from "lucide-react"
+import ThemeToggle from "@/components/ThemeToggle"
+import { site } from "@/site"
+---
+
+<header class="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
+  <div class="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
+    <a href="/" class="font-semibold tracking-tight">{site.name}</a>
+    <nav class="flex items-center gap-1 text-sm">
+      <a href="/" class="rounded-md px-2.5 py-1.5 text-muted-foreground hover:bg-muted hover:text-foreground">Posts</a>
+      <a
+        href="/rss.xml"
+        class="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+        aria-label="RSS feed"
+        title="RSS feed"
+      >
+        <Rss className="size-4" />
+      </a>
+      <ThemeToggle client:load />
+    </nav>
+  </div>
+</header>
