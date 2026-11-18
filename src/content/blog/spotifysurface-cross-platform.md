@@ -1,7 +1,8 @@
 ---
-title: "Making SpotifySurface cross-platform: a revoked token, decoy lyrics and three OSes in CI"
-description: "Getting a Windows-only Spotify lyrics window running again, then on macOS and Linux: a revoked refresh token, Musixmatch returning a fake song instead of an error, a fragile LRC parser, per-OS media control, and a GitHub Actions matrix to test it all."
+title: "Making SpotifySurface cross-platform: a revoked token, decoy lyrics and CI without a Mac"
+description: "Getting a Windows-only Spotify lyrics window running again, then on macOS and Linux: a revoked refresh token, Musixmatch returning a fake song instead of an error, a fragile LRC parser, per-OS media control, and why macOS didn't stay in the GitHub Actions matrix."
 pubDate: 2026-11-19
+updatedDate: 2026-11-19
 tags: ["python", "tkinter", "spotify", "cross-platform", "github-actions", "lyrics"]
 ---
 
@@ -9,7 +10,7 @@ I wanted to make a small Windows-only app run on macOS and Linux. Before I could
 
 [SpotifySurface](https://github.com/PureAspiration/SpotifySurface) is a small always-on-top Tkinter window that shows what's playing on Spotify, with lyrics synced to the song. I hadn't run it for a while. It crashed on startup, and once that was fixed it showed confident, perfectly timed lyrics in a language nobody speaks. Only after those fixes could I start on the cross-platform work.
 
-This post covers the four fixes in the order I hit them, then the cross-platform work and the CI that checks it on all three OSes.
+This post covers the four fixes in the order I hit them, then the cross-platform work and how it's tested in CI, including why macOS didn't stay in the CI matrix.
 
 ## TL;DR
 
@@ -145,7 +146,7 @@ The rest was small:
 
 One macOS gotcha: AppleScript addressing an app that isn't installed pops up a **"Where is Spotify?"** dialog and blocks. So the code checks `pgrep -x Spotify` before it runs any AppleScript. Every subprocess call also has a 3-second timeout.
 
-## 6. Testing all three OSes in CI
+## 6. Testing three OSes in CI
 
 I only have Windows here, so the other two platforms had to be tested another way. The tests do it two ways:
 
@@ -157,10 +158,19 @@ The lyrics tests replay the exact inputs that broke: the no-space LRC line, the 
 The workflow is a plain matrix:
 
 ```yaml
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 strategy:
   fail-fast: false
   matrix:
-    os: [windows-latest, ubuntu-latest, macos-latest]
+    os: [windows-latest, ubuntu-latest]
     python-version: ["3.10"]
 steps:
   - uses: actions/checkout@v4
@@ -173,6 +183,20 @@ steps:
 ```
 
 The import step is there on purpose: a Windows-only import at the top of `main.py` was the original bug, and this catches it coming back.
+
+On the latest commit both jobs pass: Ubuntu in about 23 seconds, Windows in about a minute.
+
+### Why macOS isn't in the matrix
+
+The first version had `macos-latest` in the matrix too. Ubuntu and Windows finished within a minute. The macOS jobs sat at **"Queued — Waiting to run this check"** long after that.
+
+That's normal for macOS on GitHub Actions. Apple's licence only allows macOS on Apple hardware, so GitHub can't spin up macOS VMs on ordinary cloud servers the way it does for Linux and Windows. The pool is much smaller, and the free plan caps you at **5 concurrent macOS jobs** (out of 20 total). `macos-latest` runs on Apple Silicon, which is also what every iOS and Mac project is queueing for, so waits swing from seconds to many minutes depending on the time of day.
+
+My first workflow made it worse. It triggered on both `push` and `pull_request` with no branch filter, so every commit on a PR branch ran the whole matrix **twice**: two macOS jobs waiting for a Mac instead of one. The fix is the `on:` block above. `push` only runs for `master`, and PR commits are covered by `pull_request`. The `concurrency` group cancels the previous run when a new commit lands, so stale jobs don't sit in the queue.
+
+Then I dropped `macos-latest` from the matrix. The macOS code is still tested: the `osascript` and `pgrep` branches run on every job through the mocked tests, including the check that AppleScript is never called when Spotify isn't running. What CI doesn't do any more is run those commands on a real Mac. For a small hobby app, I'll take that over waiting on a Mac for every push.
+
+One thing to know before cancelling runs from a script: cancelling a workflow run through the API needs the **Actions: Read and write** permission on a fine-grained token. Contents and Pull requests aren't enough.
 
 Python is pinned to 3.10 because the project pins `Pillow==9.2.0`, which predates wheels for newer Pythons. On 3.11+ pip would try to build it from source.
 
