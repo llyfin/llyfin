@@ -1,7 +1,8 @@
 ---
-title: "Making SpotifySurface cross-platform: a revoked token, decoy lyrics and three OSes in CI"
-description: "Getting a Windows-only Spotify lyrics window running again, then on macOS and Linux: a revoked refresh token, Musixmatch returning a fake song instead of an error, a fragile LRC parser, per-OS media control, and a GitHub Actions matrix to test it all."
+title: "Making SpotifySurface cross-platform: a revoked token, decoy lyrics and CI without a Mac"
+description: "Getting a Windows-only Spotify lyrics window running again, then on macOS and Linux: a revoked refresh token, Musixmatch returning a fake song instead of an error, a fragile LRC parser, per-OS media control, and why macOS didn't stay in the GitHub Actions matrix."
 pubDate: 2026-11-19
+updatedDate: 2026-11-19
 tags: ["python", "tkinter", "spotify", "cross-platform", "github-actions", "lyrics"]
 ---
 
